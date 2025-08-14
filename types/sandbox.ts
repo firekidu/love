@@ -1,4 +1,5 @@
-// Global types for sandbox file management
+// Scoped session state management for sandboxes and related data
+import type { ConversationState } from './conversation';
 
 export interface SandboxFile {
   content: string;
@@ -9,7 +10,8 @@ export interface SandboxFileCache {
   files: Record<string, SandboxFile>;
   lastSync: number;
   sandboxId: string;
-  manifest?: any; // FileManifest type from file-manifest.ts
+  // FileManifest type from file-manifest.ts
+  manifest?: any;
 }
 
 export interface SandboxState {
@@ -21,11 +23,39 @@ export interface SandboxState {
   } | null;
 }
 
-// Declare global types
-declare global {
-  var activeSandbox: any;
-  var sandboxState: SandboxState;
-  var existingFiles: Set<string>;
+export interface SessionState {
+  activeSandbox: any;
+  sandboxData: { sandboxId: string; url: string } | null;
+  existingFiles: Set<string>;
+  sandboxState: SandboxState;
+  conversationState: ConversationState | null;
+  viteErrors?: any[];
+  viteErrorsCache?: { errors: any[]; timestamp: number } | null;
 }
 
-export {};
+const sessionStore = new Map<string, SessionState>();
+
+export function getSession(sessionId: string): SessionState {
+  let session = sessionStore.get(sessionId);
+  if (!session) {
+    session = {
+      activeSandbox: null,
+      sandboxData: null,
+      existingFiles: new Set<string>(),
+      sandboxState: {
+        fileCache: null,
+        sandbox: null,
+        sandboxData: null,
+      },
+      conversationState: null,
+      viteErrors: [],
+      viteErrorsCache: null,
+    };
+    sessionStore.set(sessionId, session);
+  }
+  return session;
+}
+
+export function deleteSession(sessionId: string) {
+  sessionStore.delete(sessionId);
+}

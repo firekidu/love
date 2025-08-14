@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Sandbox } from '@e2b/code-interpreter';
-
-// Get active sandbox from global state (in production, use a proper state management solution)
-declare global {
-  var activeSandbox: any;
-}
+import { getSession } from '@/types/sandbox';
 
 export async function POST(request: NextRequest) {
   try {
-    const { command } = await request.json();
+    const { command, sandboxId = 'default' } = await request.json();
+    const global = getSession(sandboxId);
     
     if (!command) {
       return NextResponse.json({ 

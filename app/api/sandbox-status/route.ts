@@ -1,13 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { getSession } from '@/types/sandbox';
 
-declare global {
-  var activeSandbox: any;
-  var sandboxData: any;
-  var existingFiles: Set<string>;
-}
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const sandboxId = request.nextUrl.searchParams.get('sandboxId') || 'default';
+    const global = getSession(sandboxId);
     // Check if sandbox exists
     const sandboxExists = !!global.activeSandbox;
     

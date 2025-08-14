@@ -1,13 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { getSession, deleteSession } from '@/types/sandbox';
 
-declare global {
-  var activeSandbox: any;
-  var sandboxData: any;
-  var existingFiles: Set<string>;
-}
-
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const { sandboxId = 'default' } = await request.json().catch(() => ({}));
+    const global = getSession(sandboxId);
     console.log('[kill-sandbox] Killing active sandbox...');
     
     let sandboxKilled = false;
@@ -30,6 +27,8 @@ export async function POST() {
       global.existingFiles.clear();
     }
     
+    deleteSession(sandboxId);
+
     return NextResponse.json({
       success: true,
       sandboxKilled,

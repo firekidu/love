@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-declare global {
-  var viteErrors: any[];
-}
-
-// Initialize global viteErrors array if it doesn't exist
-if (!global.viteErrors) {
-  global.viteErrors = [];
-}
+import { getSession } from '@/types/sandbox';
 
 export async function POST(request: NextRequest) {
   try {
-    const { error, file, type = 'runtime-error' } = await request.json();
+    const { error, file, type = 'runtime-error', sandboxId = 'default' } = await request.json();
+    const global = getSession(sandboxId);
     
     if (!error) {
       return NextResponse.json({ 
@@ -37,11 +30,11 @@ export async function POST(request: NextRequest) {
     }
     
     // Add to global errors array
-    global.viteErrors.push(errorObj);
-    
+    global.viteErrors!.push(errorObj);
+
     // Keep only last 50 errors
-    if (global.viteErrors.length > 50) {
-      global.viteErrors = global.viteErrors.slice(-50);
+    if (global.viteErrors!.length > 50) {
+      global.viteErrors = global.viteErrors!.slice(-50);
     }
     
     console.log('[report-vite-error] Error reported:', errorObj);

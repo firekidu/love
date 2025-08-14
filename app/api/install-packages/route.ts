@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Sandbox } from '@e2b/code-interpreter';
-
-declare global {
-  var activeSandbox: any;
-  var sandboxData: any;
-}
+import { getSession } from '@/types/sandbox';
 
 export async function POST(request: NextRequest) {
   try {
-    const { packages, sandboxId } = await request.json();
+    const { packages, sandboxId = 'default' } = await request.json();
+    const global = getSession(sandboxId);
     
     if (!packages || !Array.isArray(packages) || packages.length === 0) {
       return NextResponse.json({ 

@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { getSession } from '@/types/sandbox';
 
-declare global {
-  var viteErrorsCache: { errors: any[], timestamp: number } | null;
-}
-
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const { sandboxId = 'default' } = await request.json().catch(() => ({}));
+    const global = getSession(sandboxId);
     // Clear the cache
     global.viteErrorsCache = null;
     

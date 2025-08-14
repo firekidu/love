@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SandboxState } from '@/types/sandbox';
 import type { ConversationState } from '@/types/conversation';
-
-declare global {
-  var conversationState: ConversationState | null;
-}
+import { getSession } from '@/types/sandbox';
 
 interface ParsedResponse {
   explanation: string;
@@ -126,15 +123,11 @@ function parseAIResponse(response: string): ParsedResponse {
   return sections;
 }
 
-declare global {
-  var activeSandbox: any;
-  var existingFiles: Set<string>;
-  var sandboxState: SandboxState;
-}
 
 export async function POST(request: NextRequest) {
   try {
-    const { response, isEdit = false, packages = [] } = await request.json();
+    const { response, isEdit = false, packages = [], sandboxId = 'default' } = await request.json();
+    const global = getSession(sandboxId);
     
     if (!response) {
       return NextResponse.json({

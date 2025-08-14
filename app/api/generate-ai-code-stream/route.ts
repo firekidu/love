@@ -5,6 +5,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import type { SandboxState } from '@/types/sandbox';
+import { getSession } from '@/types/sandbox';
 import { selectFilesForEdit, getFileContents, formatFilesForAI } from '@/lib/context-selector';
 import { executeSearchPlan, formatSearchResultsForAI, selectTargetFile } from '@/lib/file-search-executor';
 import { FileManifest } from '@/types/file-manifest';
@@ -67,14 +68,13 @@ function analyzeUserPreferences(messages: ConversationMessage[]): {
   };
 }
 
-declare global {
-  var sandboxState: SandboxState;
-  var conversationState: ConversationState | null;
-}
+// session state is managed via getSession
 
 export async function POST(request: NextRequest) {
   try {
     const { prompt, model = 'openai/gpt-oss-20b', context, isEdit = false } = await request.json();
+    const sandboxId = context?.sandboxId || 'default';
+    const global = getSession(sandboxId);
     
     console.log('[generate-ai-code-stream] Received request:');
     console.log('[generate-ai-code-stream] - prompt:', prompt);

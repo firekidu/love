@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-declare global {
-  var activeSandbox: any;
-}
+import { getSession } from '@/types/sandbox';
 
 export async function POST(request: NextRequest) {
   try {
-    const { files } = await request.json();
+    const { files, sandboxId = 'default' } = await request.json();
+    const global = getSession(sandboxId);
     
     if (!files || typeof files !== 'object') {
       return NextResponse.json({ 
