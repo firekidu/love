@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Sandbox } from '@e2b/code-interpreter';
 import type { SandboxState } from '@/types/sandbox';
 import type { ConversationState } from '@/types/conversation';
-
-declare global {
-  var conversationState: ConversationState | null;
-  var activeSandbox: any;
-  var existingFiles: Set<string>;
-  var sandboxState: SandboxState;
-}
+import { getSession } from '@/types/sandbox';
 
 interface ParsedResponse {
   explanation: string;
@@ -262,6 +256,7 @@ function parseAIResponse(response: string): ParsedResponse {
 export async function POST(request: NextRequest) {
   try {
     const { response, isEdit = false, packages = [], sandboxId } = await request.json();
+    const global = getSession(sandboxId || 'default');
     
     if (!response) {
       return NextResponse.json({

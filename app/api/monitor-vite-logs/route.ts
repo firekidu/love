@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { getSession } from '@/types/sandbox';
 
-declare global {
-  var activeSandbox: any;
-}
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const sandboxId = request.nextUrl.searchParams.get('sandboxId') || 'default';
+    const global = getSession(sandboxId);
     if (!global.activeSandbox) {
       return NextResponse.json({ 
         success: false, 

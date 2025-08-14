@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ConversationState } from '@/types/conversation';
-
-declare global {
-  var conversationState: ConversationState | null;
-}
+import { getSession } from '@/types/sandbox';
 
 // GET: Retrieve current conversation state
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const sandboxId = request.nextUrl.searchParams.get('sandboxId') || 'default';
+    const global = getSession(sandboxId);
     if (!global.conversationState) {
       return NextResponse.json({
         success: true,
@@ -32,7 +31,8 @@ export async function GET() {
 // POST: Reset or update conversation state
 export async function POST(request: NextRequest) {
   try {
-    const { action, data } = await request.json();
+    const { action, data, sandboxId = 'default' } = await request.json();
+    const global = getSession(sandboxId);
     
     switch (action) {
       case 'reset':
@@ -124,8 +124,10 @@ export async function POST(request: NextRequest) {
 }
 
 // DELETE: Clear conversation state
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    const sandboxId = request.nextUrl.searchParams.get('sandboxId') || 'default';
+    const global = getSession(sandboxId);
     global.conversationState = null;
     
     console.log('[conversation-state] Cleared conversation state');

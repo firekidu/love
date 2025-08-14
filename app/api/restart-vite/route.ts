@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { getSession } from '@/types/sandbox';
 
-declare global {
-  var activeSandbox: any;
-}
-
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const { sandboxId = 'default' } = await request.json().catch(() => ({}));
+    const global = getSession(sandboxId);
     if (!global.activeSandbox) {
       return NextResponse.json({ 
         success: false, 

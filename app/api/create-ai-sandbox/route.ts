@@ -2,37 +2,31 @@ import { NextResponse } from 'next/server';
 import { Sandbox } from '@e2b/code-interpreter';
 import type { SandboxState } from '@/types/sandbox';
 import { appConfig } from '@/config/app.config';
-
-// Store active sandbox globally
-declare global {
-  var activeSandbox: any;
-  var sandboxData: any;
-  var existingFiles: Set<string>;
-  var sandboxState: SandboxState;
-}
+import { getSession } from '@/types/sandbox';
 
 export async function POST() {
   let sandbox: any = null;
+  const defaultSession = getSession('default');
 
   try {
     console.log('[create-ai-sandbox] Creating base sandbox...');
     
     // Kill existing sandbox if any
-    if (global.activeSandbox) {
+    if (defaultSession.activeSandbox) {
       console.log('[create-ai-sandbox] Killing existing sandbox...');
       try {
-        await global.activeSandbox.kill();
+        await defaultSession.activeSandbox.kill();
       } catch (e) {
         console.error('Failed to close existing sandbox:', e);
       }
-      global.activeSandbox = null;
+      defaultSession.activeSandbox = null;
     }
     
     // Clear existing files tracking
-    if (global.existingFiles) {
-      global.existingFiles.clear();
+    if (defaultSession.existingFiles) {
+      defaultSession.existingFiles.clear();
     } else {
-      global.existingFiles = new Set<string>();
+      defaultSession.existingFiles = new Set<string>();
     }
 
     // Create base sandbox - we'll set up Vite ourselves for full control
@@ -295,6 +289,8 @@ if os.path.exists(css_file):
 time.sleep(2)
 print('✓ Tailwind CSS should be loaded')
     `);
+
+    const global = getSession(sandboxId);
 
     // Store sandbox globally
     global.activeSandbox = sandbox;
