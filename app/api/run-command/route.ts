@@ -6,14 +6,23 @@ declare global {
   var activeSandbox: any;
 }
 
+
 export async function POST(request: NextRequest) {
   try {
     const { command } = await request.json();
-    
-    if (!command) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Command is required' 
+
+    if (!Array.isArray(command) || command.length === 0 || !command.every(arg => typeof arg === 'string')) {
+      return NextResponse.json({
+        success: false,
+        error: 'Command must be an array of strings'
+      }, { status: 400 });
+    }
+
+    const invalidArg = command.find((arg: string) => !/^[\w.@\/-]+$/.test(arg));
+    if (invalidArg) {
+      return NextResponse.json({
+        success: false,
+        error: `Unsupported characters in command argument: ${invalidArg}`
       }, { status: 400 });
     }
     
@@ -24,16 +33,16 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    console.log(`[run-command] Executing: ${command}`);
-    
+    console.log(`[run-command] Executing: ${command.join(' ')}`);
+
     const result = await global.activeSandbox.runCode(`
 import subprocess
 import os
 
 os.chdir('/home/user/app')
-result = subprocess.run(${JSON.stringify(command.split(' '))}, 
-                       capture_output=True, 
-                       text=True, 
+result = subprocess.run(${JSON.stringify(command)},
+                       capture_output=True,
+                       text=True,
                        shell=False)
 
 print("STDOUT:")
@@ -54,9 +63,9 @@ print(f"\\nReturn code: {result.returncode}")
     
   } catch (error) {
     console.error('[run-command] Error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: (error as Error).message 
+    return NextResponse.json({
+      success: false,
+      error: (error as Error).message
     }, { status: 500 });
   }
 }
