@@ -226,11 +226,27 @@ print('\\nAll files created successfully!')
 `;
 
     // Execute the setup script
-    await sandbox.runCode(setupScript);
-    
+    const setupResult = await sandbox.runCode(setupScript);
+    if (setupResult.error) {
+      console.error('[create-ai-sandbox] File setup error:', setupResult.error);
+      try {
+        await sandbox.kill();
+      } catch (e) {
+        console.error('Failed to close sandbox after setup error:', e);
+      }
+      return NextResponse.json(
+        {
+          error: 'Failed to write project files',
+          details: setupResult.error.traceback,
+          logs: setupResult.logs
+        },
+        { status: 500 }
+      );
+    }
+
     // Install dependencies
     console.log('[create-ai-sandbox] Installing dependencies...');
-    await sandbox.runCode(`
+    const installResult = await sandbox.runCode(`
 import subprocess
 import sys
 
@@ -245,13 +261,28 @@ result = subprocess.run(
 if result.returncode == 0:
     print('✓ Dependencies installed successfully')
 else:
-    print(f'⚠ Warning: npm install had issues: {result.stderr}')
-    # Continue anyway as it might still work
+    raise Exception(f'npm install failed: {result.stderr}')
     `);
-    
+    if (installResult.error) {
+      console.error('[create-ai-sandbox] Dependency installation failed:', installResult.error);
+      try {
+        await sandbox.kill();
+      } catch (e) {
+        console.error('Failed to close sandbox after install error:', e);
+      }
+      return NextResponse.json(
+        {
+          error: 'Failed to install dependencies',
+          details: installResult.error.traceback,
+          logs: installResult.logs
+        },
+        { status: 500 }
+      );
+    }
+
     // Start Vite dev server
     console.log('[create-ai-sandbox] Starting Vite dev server...');
-    await sandbox.runCode(`
+    const viteResult = await sandbox.runCode(`
 import subprocess
 import os
 import time
@@ -273,9 +304,30 @@ process = subprocess.Popen(
     env=env
 )
 
+time.sleep(1)
+if process.poll() is not None:
+    stderr = process.stderr.read().decode() if process.stderr else ''
+    raise Exception(f'Vite failed to start: {stderr}')
+
 print(f'✓ Vite dev server started with PID: {process.pid}')
 print('Waiting for server to be ready...')
     `);
+    if (viteResult.error) {
+      console.error('[create-ai-sandbox] Vite start failed:', viteResult.error);
+      try {
+        await sandbox.kill();
+      } catch (e) {
+        console.error('Failed to close sandbox after Vite error:', e);
+      }
+      return NextResponse.json(
+        {
+          error: 'Failed to start Vite dev server',
+          details: viteResult.error.traceback,
+          logs: viteResult.logs
+        },
+        { status: 500 }
+      );
+    }
     
     // Wait for Vite to be fully ready
     await new Promise(resolve => setTimeout(resolve, appConfig.e2b.viteStartupDelay));
